@@ -1,0 +1,36 @@
+name: Build APK
+on:
+  workflow_dispatch:
+  push:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: WaGroupsExporterAndroid
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager --licenses || true
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+          build-root-directory: WaGroupsExporterAndroid
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wa-groups-exporter-apk
+          path: WaGroupsExporterAndroid/app/build/outputs/apk/debug/app-debug.apk
+      - name: Publish the APK as a download (Releases page)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-build-${{ github.run_number }}
+          name: WhatsApp Groups Exporter APK (build ${{ github.run_number }})
+          files: WaGroupsExporterAndroid/app/build/outputs/apk/debug/app-debug.apk
